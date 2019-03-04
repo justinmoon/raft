@@ -1,5 +1,6 @@
 import socket
 import sys
+import time
 
 
 class Channel:
@@ -21,22 +22,28 @@ class Channel:
     def send(self, msg):
         size = len(msg)
         sizemsg = size.to_bytes(4, 'big')
-        self.sock.sendall(sizemsg + msg)
+        self.sock.sendall(sizemsg)
+        self.sock.sendall(msg)
+
+    def recv_exactly(self, n):
+        msg = b''
+        while len(msg) < n:
+            new = self.sock.recv(1)
+            if not new:
+                raise IOError('Socket closed')
+            msg += new
+        return msg
 
     def recv(self):
-        msg = b''
         sizemsg = self.sock.recv(4)
-        assert len(sizemsg) == 4
         size = int.from_bytes(sizemsg, 'big')
-        while len(msg) < size:
-            msg += self.sock.recv(1)
-        return msg
+        return self.recv_exactly(size)
 
 
 def client(address):
     c = Channel()
     c.connect(address)
-    c.send(b'hello from client')
+    c.send(b'hello')
 
     m = c.recv()
     print("client received:", m)
@@ -49,7 +56,7 @@ def server(address):
     m = c.recv()
     print("server received:", m)
 
-    c.send(b'good day from server')
+    c.send(b'good day')
 
 
 if __name__ == '__main__':

@@ -13,8 +13,14 @@ class Channel:
         self.serialization = serialization
 
     def connect(self, address):
+        # TODO: Retry until successful
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.sock.connect(address)
+        try:
+            self.sock.connect(address)
+        except:
+            print(f"retrying connect({address})")
+            time.sleep(1)
+            self.connect(address)
 
     def accept(self, address):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -48,60 +54,6 @@ class Channel:
             msg = pickle.loads(msg)
         if self.serialization == 'json':
             msg = json.loads(msg.decode('utf-8'))
-        return msg
-
-
-class ReliableChannel:
-
-    def __init__(self, serialization=None):
-        self.sock = None
-        self.address = None
-
-    def connect(self, address):
-        # TODO: Retry until successful
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        try:
-            self.sock.connect(address)
-        except:
-            print(f"retrying connect({address})")
-            time.sleep(1)
-            self.connect(address)
-
-    def accept(self, address):
-        # TODO: Retry until successful
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.bind(address)
-        sock.listen(1)
-        self.sock, self.address = sock.accept()
-
-    def send(self, msg):
-        size = len(msg)
-        sizemsg = size.to_bytes(4, 'big')
-
-        # TODO: Retry until successful
-        self.sock.sendall(sizemsg)
-        self.sock.sendall(msg)
-
-    def send_raw(self, msg):
-        size = len(msg)
-        sizemsg = size.to_bytes(4, 'big')
-        self.sock.sendall(sizemsg)
-        self.sock.sendall(msg)
-
-    def recv_exactly(self, n):
-        msg = b''
-        while len(msg) < n:
-            # TODO: Retry until successful
-            new = self.sock.recv(1)
-            if not new:
-                raise IOError('Socket closed')
-            msg += new
-        return msg
-
-    def recv(self):
-        sizemsg = self.recv_exactly(4)
-        size = int.from_bytes(sizemsg, 'big')
-        msg = self.recv_exactly(size)
         return msg
 
 
@@ -155,11 +107,6 @@ def serialization_test(port):
     end = time.time()
     print(f"json took {end - start} seconds")
 
-def reliability_test(address):
-    c = ReliableChannel()
-    c.connect(address)
-    print('connected')
-
 
 if __name__ == '__main__':
     args = sys.argv
@@ -173,7 +120,5 @@ if __name__ == '__main__':
         serialization_test(port)
     elif command == 'server':
         server(address, serialization)
-    elif command == 'reliability-test':
-        reliability_test(address)
     else:
-        print('python channel.py <reliability-test|test|client|server> <address> <raw|json|pickle>')
+        print('python channel.py <test|client|server> <address> <raw|json|pickle>')

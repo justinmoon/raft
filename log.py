@@ -56,10 +56,6 @@ def log_server(address):
             continue
         log.critical(msg)
         c.send(b'ack')
-        print('iteration')
-        conn = sqlite3.connect('log.db')
-        print(conn.execute('select * from messages').fetchall())
-        conn.close()
 
 
 if __name__ == '__main__':

@@ -40,34 +40,6 @@ class SQLiteHandler(logging.StreamHandler):
         self.conn.commit()
 
 
-def sqlite_demo():
-    conn = sqlite3.connect('log.db')
-
-    def create_table():
-        conn.execute('''
-        CREATE TABLE IF NOT EXISTS 
-        messages (id integer primary key, level text, timestamp text, message text)
-        ''')
-
-    def record(message):
-        q = '''
-        INSERT INTO
-            messages
-        VALUES
-            ("INFO", "today", "OMG")
-        '''
-        conn.execute(q)
-
-    def query():
-        return conn.execute("SELECT * FROM messages").fetchall()
-
-    create_table()
-    record("FIXME")
-    record("FIXME")
-    conn.commit()
-    print(query())
-
-
 def sql_handler_demo():
     conn = sqlite3.connect('log.db')
     conn.execute('drop table messages')

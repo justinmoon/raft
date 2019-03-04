@@ -29,14 +29,7 @@ class Channel:
             msg = json.dumps(msg.decode('utf-8')).encode('utf-8')
         size = len(msg)
         sizemsg = size.to_bytes(4, 'big')
-        self.sock.sendall(sizemsg)
-        self.sock.sendall(msg)
-
-    def send_raw(self, msg):
-        size = len(msg)
-        sizemsg = size.to_bytes(4, 'big')
-        self.sock.sendall(sizemsg)
-        self.sock.sendall(msg)
+        self.sock.sendall(sizemsg+msg)
 
     def recv_exactly(self, n):
         msg = b''

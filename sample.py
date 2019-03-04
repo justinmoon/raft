@@ -25,12 +25,19 @@ class SQLiteHandler(logging.StreamHandler):
         formatter = logging.Formatter(fmt)
         self.setFormatter(formatter)
 
+        # SQLite stuff
+        self.conn = sqlite3.connect('log.db')
+
     def emit(self, record):
-        print("record:", record)
         msg = self.format(record)
-        print("msg:", msg)
-        with open("log.txt", "a") as f:
-            f.write(msg + '\n')
+        q = '''
+        INSERT INTO
+            messages (message)
+        VALUES
+            (?)
+        '''
+        self.conn.execute(q, [msg])
+        self.conn.commit()
 
 
 def sqlite_demo():
@@ -38,7 +45,8 @@ def sqlite_demo():
 
     def create_table():
         conn.execute('''
-        CREATE TABLE messages (level text, timestamp text, message text)
+        CREATE TABLE IF NOT EXISTS 
+        messages (id integer primary key, level text, timestamp text, message text)
         ''')
 
     def record(message):
@@ -53,22 +61,30 @@ def sqlite_demo():
     def query():
         return conn.execute("SELECT * FROM messages").fetchall()
 
-    try:
-        create_table()
-    except:
-        pass
-
+    create_table()
     record("FIXME")
     record("FIXME")
     conn.commit()
     print(query())
 
 
-def file_handler_demo():
+def sql_handler_demo():
+    conn = sqlite3.connect('log.db')
+    conn.execute('drop table messages')
+    conn.execute('''
+        CREATE TABLE messages (id integer primary key AUTOINCREMENT, message text)
+    ''')
+    conn.commit()
+
     log = logging.getLogger(__name__)
-    log.addHandler(FileHandler())
-    log.error("OMG")
+    log.addHandler(SQLiteHandler())
+    log.critical("OMG")
+    log.error("ZOMFG")
+    print(conn.execute("SELECT * FROM messages").fetchall())
 
 
 if __name__ == '__main__':
-    sqlite_demo()
+    sql_handler_demo()
+    # log = logging.getLogger(__name__)
+    # log.addHandler(SQLiteHandler())
+    # log.error("OMG")

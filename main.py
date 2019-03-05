@@ -6,7 +6,7 @@ import time
 import random
 
 from channel import Channel
-from sample import SQLiteHandler, DuplicateRecordError
+from logger import SQLiteHandler, DuplicateRecordError
 
 
 def log_client(address):

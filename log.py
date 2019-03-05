@@ -3,19 +3,22 @@ import logging
 import sys
 import os
 import time
+import random
 
 from channel import Channel
-from sample import SQLiteHandler
+from sample import SQLiteHandler, DuplicateRecordError
 
 
 def log_client(address):
     c = Channel()
     c.connect(address)
-    c.send(b"very important configuration")
-    res = c.recv()
-    assert res == b'ack'
-    print("received", res)
-    time.sleep(1)
+
+    while True:
+        i = random.randint(0, 10)
+        c.send(f"log value {i}".encode('utf-8'))
+        res = c.recv()
+        print("received", res)
+        time.sleep(1)
 
 
 def inspect_db():
@@ -27,7 +30,6 @@ def inspect_db():
 def create_db():
     if os.path.exists('log.db'):
         os.remove('log.db')
-
     conn = sqlite3.connect('log.db')
     conn.execute('''
         CREATE TABLE messages (id integer primary key AUTOINCREMENT, message text)
@@ -54,7 +56,13 @@ def log_server(address):
             print('waiting')
             time.sleep(1)
             continue
-        log.critical(msg)
+
+        try:
+            log.critical(msg)
+        except DuplicateRecordError:
+            c.send(b'nack')
+            continue
+
         c.send(b'ack')
 
 
@@ -66,7 +74,6 @@ if __name__ == '__main__':
     if role == 'client':
         log_client(address)
         print(inspect_db())
-    if role == 'server': 
+    if role == 'server':
         create_db()
         log_server(address)
-

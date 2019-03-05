@@ -16,7 +16,12 @@ def log_client(address):
     while True:
         i = random.randint(0, 10)
         c.send(f"log value {i}".encode('utf-8'))
-        res = c.recv()
+        try:
+            res = c.recv()
+        except:
+            c.connect(address)
+            print("reconnected")
+            continue
         print("received", res)
         time.sleep(1)
 
@@ -49,9 +54,11 @@ def log_server(address):
             msg = c.recv()
             print('received', msg)
         except:
-            print("waiting")
-            time.sleep(1)
+            print('reconnecting')
+            c.reconnect()
+            print('reconnected')
             continue
+
         if msg == b'':
             print('waiting')
             time.sleep(1)
@@ -73,7 +80,6 @@ if __name__ == '__main__':
     address = ('localhost', int(port))
     if role == 'client':
         log_client(address)
-        print(inspect_db())
     if role == 'server':
         create_db()
         log_server(address)
